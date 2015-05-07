@@ -1,0 +1,28 @@
+#!/bin/bash
+# NodeBB-Backup
+
+# Directorys
+REDIS_SOURCE=/var/lib/redis/6379/dump.rdb
+NODEBB_SOURCE=/home/nodebb/nodebb/public
+BACKUP_DIR=/root/backup/nodebb
+
+# Variables
+DATE=`date '+%y%m%d%H%M'` # wrong time? time: YYYY-MM-DD HH:MM
+
+# Process:
+# sync in folder
+# git push
+
+# Directory:
+# backup/
+#     ../data   -> NODEBB_SOURCE
+#     ../db     -> REDIS_SOURCE
+
+# Copy everything into the backup directory with sync
+
+
+# Sync to Github
+cd $BACKUP_DIR
+git add .
+git commit -m 'nodebb backup: <time>' # time: YYYY-MM-DD HH:MM
+git push origin master
