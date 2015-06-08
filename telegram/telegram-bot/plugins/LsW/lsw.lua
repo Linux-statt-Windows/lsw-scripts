@@ -73,8 +73,8 @@ local function getLsW(url, attempt)
 end
 
 local function run(msg, matches)
-  local url = "http://we-host.de/lsw/infos.json"
-  local version = "0.1.1"
+  local url = "http://api.linux-statt-windows.org/infos.json"
+  local version = "0.1.2"
 
   if matches[1] == "!lsw" then
     return getLsW(url, 0)
