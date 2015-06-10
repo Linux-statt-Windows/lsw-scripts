@@ -17,7 +17,6 @@ REDIS_BACKUP=$BACKUP_DIR/db/dump.rdb
 
 # Variables
 DATE=$( date +"%Y-%M-%d %H:%m" ) # wrong time? time: YYYY-MM-DD HH:MM
-MAIL_ADRESS="name@mail.com"
 
 # Generate safe password for encryption
 PASSWORD=$( head -c 256 /dev/urandom | sha256sum | base64 | tail -c +16 | head -c 32; echo )
@@ -38,7 +37,7 @@ rm $REDIS_BACKUP
 mv $REDIS_BACKUP.enc $REDIS_BACKUP
 
 # Send password via mail
-mail -s "${DATE} - NodeBB-Backup" $MAIL_ADRESS <<< "${PASSWORD}"
+sendmail.py -m $PASSWORD
 
 # Sync to Github
 cd $BACKUP_DIR
