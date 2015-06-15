@@ -1,0 +1,39 @@
+[{
+	"forum": {
+		"name": "Das Linux statt Windows Forum",
+		"short_url": "http://lsw.io",
+		"long_url": "https://linux-statt-windows.org",
+		"de_url": "http://linux-statt-windows.de",
+		"eu_url": "http://linux-statt-windows.eu",
+		"faq_url": "https://linux-statt-windows.org/topic/36/faq",
+		"rules_url": "https://linux-statt-windows.org/topic/191/die-forenregeln"
+	},
+	"fb": {
+		"group_url": "https://www.facebook.com/groups/671959062866823/",
+		"short_group_url": "http://fb.lsw.io/",
+		"site_url": "https://www.facebook.com/LinuxStattWindows"
+	},
+	"github": {
+		"url": "https://github.com/Linux-statt-Windows",
+		"short_url": "http://gh.lsw.io/"
+	},
+	"mumble": {
+		"direct_url": "mumble://mumble.lsw.io/Eingangshalle?title=Linux%20statt%20Windows&version=1.2.0",
+		"url": "mumble.lsw.io",
+		"port": "64738"
+	},
+	"topic_month": {
+		"name": "Cloud Computing, das Internet der Zukunft?",
+		"month": "Mai",
+		"url": "https://linux-statt-windows.org/topic/820/mai-cloud-computing-das-internet-der-zukunft"
+	},
+	"distro_month": {
+		"name": "Manjaro Linux",
+		"month": "Juni",
+		"url": "https://linux-statt-windows.org/topic/1112/distribution-des-monats-juni-2015-manjaro-linux-0-8-1x"
+	},
+	"faq": {
+		"name": "Das Linux-statt-Windows FAQ.",
+		"url": "https://linux-statt-windows.org/topic/36/faq"
+	}
+}]
