@@ -32,7 +32,7 @@ local function getText(attempt, topic)
   elseif topic == "FAQ" or topic == "faq" then
     output = data.faq.name .. '\n' .. data.faq.url
   elseif topic == "Facebook" or topic == "fb" then
-    output = 'Facebook Gruppe: ' .. data.fb.group_url .. '\n Facebook Seite: ' .. data.fb.site_url
+    output = 'Facebook Gruppe: ' .. data.fb.group_url .. '\n\n Facebook Seite: ' .. data.fb.site_url
   elseif topic == "v" or topic == "Version" then
     output = 'LsW Telegram-Bot Plugin ' .. version .. '\n Projekt: ' .. dev_url .. '\n Lizenz: GNU GPL v2'
   else
