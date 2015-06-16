@@ -23,9 +23,9 @@
 		"port": "64738"
 	},
 	"topic_month": {
-		"name": "Cloud Computing, das Internet der Zukunft?",
-		"month": "Mai",
-		"url": "https://linux-statt-windows.org/topic/820/mai-cloud-computing-das-internet-der-zukunft"
+		"name": "Systemd, die Zukunft der Init-Systeme?!?",
+		"month": "Juni",
+		"url": "https://linux-statt-windows.org/topic/1246/systemd-die-zukunft-der-init-systeme"
 	},
 	"distro_month": {
 		"name": "Manjaro Linux",
