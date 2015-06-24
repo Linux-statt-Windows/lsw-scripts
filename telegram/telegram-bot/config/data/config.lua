@@ -42,8 +42,7 @@ do local _ = {
     "expand",
     "dogify",
     "quotes",
-    "lsw",
-    "youtube"
+    "lsw"
   },
   sudo_users = {
     60392360
