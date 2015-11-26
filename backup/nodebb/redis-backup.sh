@@ -1,89 +1,97 @@
 #!/bin/bash
 
-## REMOTE ################
-
-# Operate in remote or local mode.
-# Remote mode uses ssh to issue DB dump commands
-# and sftp to retrieve the file. Encryption is always done locally.
-REMOTE=true
-# Alias for ssh and sftp.
-# Name of host alias from ~/.ssh/config.
-REMOTE_ALIAS=worker
-
-## PATHS #################
+## PATHS ######################
 
 # Folder where backups will be stored.
-BACKUP_DIR='/var/wwn/lsw.io/redis-dumping/production-backups'
+BACKUP_DIR=/home/redis-backup # /home/carebear/lsw.io/redis-dumping/production-backups
 
 # Folder for temporary files.
 # Make sure the script can delete in there! Otherwise you
 # might end up with unencrypted dumps lying around.
-BACKUP_TMP=$BACKUP_DIR/tmp
+BACKUP_TMP=/tmp/redis-backup
 
 # Redis dump path and filename.
 # These should match 'dir' and 'dbfilename' in your redis.conf.
-# Use the lines commented out to have the script determine
-# the variables from redis.conf.
-REDIS_DIR='/var/lib/redis'
-REDIS_DUMP_FILE='dump.rdb'
-# REDIS_DIR=$(grep ^dir /etc/redis/redis.conf | cut -f2 -d " ")
-# REDIS_DUMP_FILE=$(grep ^dbfilename /etc/redis/redis.conf | cut -f2 -d " ")
+REDIS_DIR=/var/lib/redis
+REDIS_DUMP_FILE=dump.rdb
+REDIS_PORT=6379
+REDIS_CMD="redis-cli -p $REDIS_PORT"
 
 ## ENCRYPTION #################
+
+# Dumps are encrypted with a one-time password, each.
+# PUBLIC_KEY is used to encrypt those passwords, before they
+# are sent via email.
 PUBLIC_KEY='/var/wwn/lsw.io/redis-backup.pub'
 
+DATE=$(date +%Y-%m-%d_%H-%M-%S)
 
-function init {
-  DATE=$(date +%Y-%m-%d_%H-%M-%S)
+function run {
   echo "[redis-backup] Starting backup with tag $DATE"
   echo "[redis-backup] Creating backup in $BACKUP_TMP"
   mkdir $BACKUP_TMP
   dumpDB
+  packAndCrypt
+  sendMail
   echo '[redis-backup] All done - Cleaning up...'
   cleanArchive
-  echo "Deleting tmp folder."
+  echo "Deleting temp folder."
   rm -Rf $BACKUP_TMP
   echo "[redis-backup] I'm out. Cya! :D."
+}
+
+function dumpDB {
+  echo "[redis-backup] Dumping last state to file ($REDIS_DIR/$REDIS_DUMP_FILE):"
+  REDIS_LASTSAVE=$( $REDIS_CMD LASTSAVE )
+  if [ $? != 0 ]; then
+    echo "[redis-backup] Error while executing redis command. Is your redis service running?"
+    exit 1
+  fi
+  $REDIS_CMD BGSAVE && echo "[redis-backup] Waiting 3 seconds to finish..." && sleep 3;
+  REDIS_NEWSAVE=$( $REDIS_CMD LASTSAVE );
+  while [ $REDIS_NEWSAVE -le $REDIS_LASTSAVE ]; do
+    echo "[redis-backup] Dumping not finished, yet. Waiting another 3 second..."
+    sleep 3
+    REDIS_NEWSAVE=$( $REDIS_CMD LASTSAVE )
+  done
+  cp $REDIS_DIR/$REDIS_DUMP_FILE $BACKUP_TMP/$DATE.rdb
+  echo "[redis-backup] Dump created."
 }
 
 function packAndCrypt {
   echo "[redis-backup] Compressing | Encrypting backup dump $BACKUP_TMP/$DATE.rdb"
   # generate random password
   PASSWORD=$( head -c 256 /dev/urandom | sha256sum | base64 | tail -c +16 | head -c 32; echo )
-
+  echo $PASSWORD > $BACKUP_TMP/$DATE.key
   # pack and encrypt dump
   tar cz -C $BACKUP_TMP $DATE.rdb | \
   openssl enc -aes-256-cbc -salt -k $PASSWORD > $BACKUP_TMP/$DATE.bck
-  # encrypt password with cert
-  
-  cp $BACKUP_TMP/$DATE.bck $BACKUP_DIR/$DATE.bck
+  mv $BACKUP_TMP/$DATE.bck $BACKUP_DIR/$DATE.bck
 }
 
-function dumpDB {
-  echo "[redis-backup] Dumping last state to file ($REDIS_DIR/$REDIS_DUMP_FILE):"
-  SCRIPT='REDIS_LASTSAVE=$( redis-cli LASTSAVE )
-  if [ $? != 0 ]; then
-    echo "[redis-backup] Error while executing redis command. Is your redis service started?"
-    exit 1
+function sendMail {
+  TO="carebear@queen.beerhive"
+  FROM="crypto@lsw.io"
+
+  # read in the passed $1 parameter,
+  # encrypt it for RECIPIENT. redirect stderr > stdout
+  # for easier inspection of gpg error message
+  ENC=$(gpg --batch --armor --recipient "$FROM" --encrypt < $BACKUP_TMP/$DATE.key 2>&1)
+
+  # failed to encrypt. prepend error message to content and send clear text content
+  if [ $? -ne 0 ]; then
+      ENC="Failed to encrypt contents: $ENC"
+      ENC+=$'\n\n'
+      ENC+="redis-backup @ $DATE"
   fi
-  redis-cli BGSAVE && echo "[redis-backup] Waiting 3 seconds to finish..." && sleep 3;
-  REDIS_NEWSAVE=$( redis-cli LASTSAVE );
-  while [ $REDIS_NEWSAVE -le $REDIS_LASTSAVE ]; do
-    echo "[redis-backup] Dumping not finished, yet. Waiting another second..."
-    sleep 1
-    REDIS_NEWSAVE=$( redis-cli LASTSAVE )
-  done
-  echo "[redis-backup] Dump created."
-  '
-  if [ $REMOTE == true ]; then
-    ssh $REMOTE_ALIAS "$SCRIPT"
-    echo "[redis-backup] Downloading dump file."
-    echo "get $REDIS_DUMP_FILE $BACKUP_TMP/$DATE.rdb" | sftp $REMOTE_ALIAS:$REDIS_DIR/
-  else
-    eval "$SCRIPT"
-    cp $REDIS_DIR/$REDIS_DUMP_FILE $BACKUP_TMP/$DATE.rdb
-  fi
-  packAndCrypt
+
+  cat <<EOF | sudo sendmail -t
+From: ${FROM}
+To: ${TO}
+Subject: Testing
+Content-type: text/plain
+${ENC}
+EOF
 }
 
 function cleanArchive {
@@ -99,4 +107,4 @@ function cleanArchive {
   fi
 }
 
-init
+run
