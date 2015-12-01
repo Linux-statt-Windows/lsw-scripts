@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# ~~~~~~~~~~~~ CONFIG ~~~~~~~~~~~~ #
+
 ## PATHS ######################
 # Folder where backups will be stored.
 BACKUP_DIR=/home/redis-backup
 # Folder for temporary files.
 BACKUP_TMP=/tmp/redis-backup
+
+## DATABASE ###################
 # Redis dump path, filename and port.
 # These must match
 #   'dir',
@@ -14,6 +18,9 @@ BACKUP_TMP=/tmp/redis-backup
 REDIS_DIR=/var/lib/redis
 REDIS_DUMP_FILE=dump.rdb
 REDIS_PORT=6379
+# Number of dumps stored.
+# Script deletes the (x) oldest dumps, whenever (x) - 10 > 10
+ARCHIVE_SHELVES=10
 
 ## EMAIL ######################
 FROM="redis-backup@lsw.io"
@@ -25,6 +32,8 @@ REDIS="redis-cli -p $REDIS_PORT"
 SENDMAIL=/usr/sbin/sendmail
 GPG=/usr/bin/gpg
 MUTT=/usr/bin/mutt
+
+# ~~~~~~~~~~~~ GIFNOC ~~~~~~~~~~~~ #
 
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 
@@ -71,10 +80,7 @@ function packAndCrypt {
 }
 
 function sendMail {
-  # read in the passed $1 parameter,
-  # encrypt it for RECIPIENT. redirect stderr > stdout
-  # for easier inspection of gpg error message
-  ENC=$(echo "$PASSWORD" | $GPG --batch --armor --recipient ${FROM} --encrypt 2>&1)
+  ENC=$( echo "$PASSWORD" | $GPG --batch --armor --recipient ${FROM} --encrypt )
 
   # failed to encrypt. send error message as content
   if [ $? -ne 0 ]; then
@@ -87,7 +93,7 @@ function sendMail {
 function cleanArchive {
   FILES=( $(ls -Ctr $BACKUP_DIR/*.bck) )
   FILECOUNT=${#FILES[*]}
-  if [ $FILECOUNT -gt 5 ]; then
+  if [ $FILECOUNT -gt $ARCHIVE_SHELVES ]; then
     echo "[redis-backup] More than 5 backups found."
     for i in `seq 4 $(expr $FILECOUNT - 1)`; do
       echo "[redis-backup] Deleting old backup ${FILES[$i]}"
