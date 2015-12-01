@@ -3,11 +3,9 @@
 ## PATHS ######################
 
 # Folder where backups will be stored.
-BACKUP_DIR=/home/redis-backup # /home/carebear/lsw.io/redis-dumping/production-backups
+BACKUP_DIR=/home/redis-backup
 
 # Folder for temporary files.
-# Make sure the script can delete in there! Otherwise you
-# might end up with unencrypted dumps lying around.
 BACKUP_TMP=/tmp/redis-backup
 
 # Redis dump path and filename.
@@ -17,12 +15,12 @@ REDIS_DUMP_FILE=dump.rdb
 REDIS_PORT=6379
 REDIS_CMD="redis-cli -p $REDIS_PORT"
 
-## ENCRYPTION #################
+## EMAIL ######################
 
-# Dumps are encrypted with a one-time password, each.
-# PUBLIC_KEY is used to encrypt those passwords, before they
-# are sent via email.
-PUBLIC_KEY='/var/wwn/lsw.io/redis-backup.pub'
+SENDMAIL=/usr/sbin/sendmail
+FROM="redis-backup@lsw.io"
+TO="rbeerdev@gmail.com"
+# TO="multiple@mail.com accounts@mail.com space_seperated@mail.com"
 
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 
@@ -35,7 +33,7 @@ function run {
   sendMail
   echo '[redis-backup] All done - Cleaning up...'
   cleanArchive
-  echo "Deleting temp folder."
+  echo "[redis-backup] Deleting temp folder."
   rm -Rf $BACKUP_TMP
   echo "[redis-backup] I'm out. Cya! :D."
 }
@@ -70,28 +68,17 @@ function packAndCrypt {
 }
 
 function sendMail {
-  TO="carebear@queen.beerhive"
-  FROM="crypto@lsw.io"
-
   # read in the passed $1 parameter,
   # encrypt it for RECIPIENT. redirect stderr > stdout
   # for easier inspection of gpg error message
-  ENC=$(gpg --batch --armor --recipient "$FROM" --encrypt < $BACKUP_TMP/$DATE.key 2>&1)
+  ENC=$(gpg --batch --armor --recipient ${FROM} --encrypt < $BACKUP_TMP/$DATE.key 2>&1)
 
   # failed to encrypt. prepend error message to content and send clear text content
   if [ $? -ne 0 ]; then
       ENC="Failed to encrypt contents: $ENC"
-      ENC+=$'\n\n'
-      ENC+="redis-backup @ $DATE"
   fi
 
-  cat <<EOF | sudo sendmail -t
-From: ${FROM}
-To: ${TO}
-Subject: Testing
-Content-type: text/plain
-${ENC}
-EOF
+  echo "$ENC" | mutt -s ${DATE} ${TO}
 }
 
 function cleanArchive {
