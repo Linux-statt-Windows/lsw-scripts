@@ -19,7 +19,7 @@ REDIS_DIR=/var/lib/redis
 REDIS_DUMP_FILE=dump.rdb
 REDIS_PORT=6379
 # Number of dumps stored.
-# Script deletes the (x) oldest dumps, whenever (x) - 10 > 10
+# Script deletes the (x - 10) oldest dumps, whenever (x) - 10 > 0
 ARCHIVE_SHELVES=10
 
 ## EMAIL ######################
